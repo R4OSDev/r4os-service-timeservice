@@ -97,7 +97,7 @@ fn handleRequest(ctx: *const r4os.r4sys.Context, handle: u32, state: *TimeServic
         else => {
             state.bad_ops +%= 1;
             copyFixed(state.last_error[0..], "bad-op");
-            return ctx.serviceEndpointReply(handle, header.request_id, r4os.abi.service_api_result_bad_op, "BADOP");
+            return r4os.app_services.replyIfPending(ctx.*, handle, header.request_id, r4os.abi.service_api_result_bad_op, "BADOP");
         },
     };
 }
@@ -106,18 +106,18 @@ fn replyStatus(ctx: *const r4os.r4sys.Context, handle: u32, request_id: u32, sta
     state.status_requests +%= 1;
     const status = makeStatus(ctx, state);
     const bytes: [*]const u8 = @ptrCast(&status);
-    return ctx.serviceEndpointReply(handle, request_id, r4os.abi.service_api_result_ok, bytes[0..@sizeOf(r4os.abi.TimeServiceStatus)]);
+    return r4os.app_services.replyIfPending(ctx.*, handle, request_id, r4os.abi.service_api_result_ok, bytes[0..@sizeOf(r4os.abi.TimeServiceStatus)]);
 }
 
 fn replySetConfig(ctx: *const r4os.r4sys.Context, handle: u32, request_id: u32, state: *TimeServiceState, payload: []const u8) i32 {
     var request: r4os.abi.TimeServiceConfig = .{};
     if (!parseConfigRequest(payload, &request)) {
         copyFixed(state.last_error[0..], "bad-config");
-        return ctx.serviceEndpointReply(handle, request_id, r4os.abi.service_api_result_invalid, "");
+        return r4os.app_services.replyIfPending(ctx.*, handle, request_id, r4os.abi.service_api_result_invalid, "");
     }
     const rc = applyConfigRequest(ctx, state, &request);
     if (rc != r4os.abi.service_api_result_ok) {
-        return ctx.serviceEndpointReply(handle, request_id, rc, "");
+        return r4os.app_services.replyIfPending(ctx.*, handle, request_id, rc, "");
     }
     return replyStatus(ctx, handle, request_id, state);
 }
