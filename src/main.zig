@@ -158,13 +158,16 @@ fn loadConfig(ctx: *const r4os.r4sys.Context, state: *TimeServiceState, bump: bo
 }
 
 fn applyConfigRequest(ctx: *const r4os.r4sys.Context, state: *TimeServiceState, request: *const r4os.abi.TimeServiceConfig) i32 {
+    if (request.flags == 0) {
+        copyFixed(state.last_error[0..], "bad-flags");
+        return r4os.abi.service_api_result_invalid;
+    }
     var next = if (state.config_valid) state.config else r4std.time.Config{};
     const flags = request.flags;
-    const legacy_timezone_request = flags == 0;
     var save_config = false;
 
-    if (legacy_timezone_request or (flags & (r4os.abi.time_service_config_flag_timezone_index | r4os.abi.time_service_config_flag_timezone_id)) != 0) {
-        const index = requestIndex(request, legacy_timezone_request) orelse {
+    if ((flags & (r4os.abi.time_service_config_flag_timezone_index | r4os.abi.time_service_config_flag_timezone_id)) != 0) {
+        const index = requestIndex(request) orelse {
             copyFixed(state.last_error[0..], "bad-zone");
             return r4os.abi.service_api_result_invalid;
         };
@@ -294,11 +297,11 @@ fn parseConfigRequest(payload: []const u8, out: *r4os.abi.TimeServiceConfig) boo
     return out.magic == r4os.abi.time_service_config_magic and out.version == r4os.abi.time_service_config_version;
 }
 
-fn requestIndex(request: *const r4os.abi.TimeServiceConfig, legacy: bool) ?usize {
-    if (legacy or (request.flags & r4os.abi.time_service_config_flag_timezone_index) != 0) {
+fn requestIndex(request: *const r4os.abi.TimeServiceConfig) ?usize {
+    if ((request.flags & r4os.abi.time_service_config_flag_timezone_index) != 0) {
         if (request.timezone_index < @as(u32, @intCast(r4std.time.zoneCount()))) return @intCast(request.timezone_index);
     }
-    if ((request.flags & r4os.abi.time_service_config_flag_timezone_id) == 0 and !legacy) return null;
+    if ((request.flags & r4os.abi.time_service_config_flag_timezone_id) == 0) return null;
     const id = spanZ(request.timezone_id[0..]);
     if (id.len != 0) return r4std.time.indexForId(id);
     return null;
@@ -370,6 +373,18 @@ fn runSelfTest(ctx: *const r4os.r4sys.Context) i32 {
         var ignored: r4os.abi.TimeServiceStatus = .{};
         _ = callReload(ctx, handle, &ignored);
     }
+
+    // All current producers select their fields explicitly. A flagless old
+    // request must not silently change timezone or persist a configuration.
+    var unflagged: r4os.abi.TimeServiceConfig = .{ .timezone_index = if (original_status.timezone_index == 0) 1 else 0 };
+    var rejected: r4os.abi.TimeServiceStatus = .{};
+    const unflagged_bytes: [*]const u8 = @ptrCast(&unflagged);
+    if (callStatusOp(ctx, handle, r4os.abi.time_service_op_set_config, unflagged_bytes[0..@sizeOf(r4os.abi.TimeServiceConfig)], &rejected) != r4os.abi.service_api_result_invalid)
+        return fail(ctx, "flagless-admission");
+    if (callStatus(ctx, handle, &rejected) != r4os.abi.service_api_result_ok or
+        rejected.timezone_index != original_status.timezone_index or rejected.clock_format != original_status.clock_format or
+        rejected.revision != original_status.revision or rejected.config_writes != original_status.config_writes)
+        return fail(ctx, "flagless-mutation");
 
     _ = ctx.fileDelete(r4std.settings.paths.time);
     var status: r4os.abi.TimeServiceStatus = .{};

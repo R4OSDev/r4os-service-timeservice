@@ -4,7 +4,7 @@
 
 ## Package
 
-- Version: `0.1.3`
+- Version: `0.1.6`
 - Image target: `/R4OS/SERVICES/TIMESVC.R4X`
 - Image scope: `slim`
 - Canonical project manifest: `module.R4MF`
@@ -18,7 +18,7 @@ On Windows:
 
     Build.bat
 
-On Linux or macOS:
+On Linux:
 
     ./Build.sh
 
@@ -26,6 +26,13 @@ The build starters resolve the current local R4OS dependency checkouts through
 `Settings.R4S`. The URL and hash entries in `build.zig.zon` record the
 last verified standalone dependency identities; workspace builds use the
 mapped local checkouts.
+
+Configuration requests select timezone index/ID, clock format or date through
+their explicit current flags. A request with `flags=0` is rejected and leaves
+configuration, revision and write counters unchanged. Timezone/configuration
+files and the supported date/clock formats retain their existing meanings.
+The existing `/SELFTEST` checks this refusal together with current requests
+and restores its original configuration and guest date.
 
 ## Documentation
 
