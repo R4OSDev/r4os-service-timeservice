@@ -9,8 +9,8 @@
             .hash = "r4os_sdk-0.64.35-NnPzAr_IEwGTHSJwdpAoaC4r1p2R4j3ifyp5n06kIwL1",
         },
         .r4os_libraries = .{
-            .url = "https://github.com/R4OSDev/r4os-libraries/archive/9d93fb9d9a5321aa970b5086fba8700562736a9a.tar.gz",
-            .hash = "r4os_libraries-0.64.17-dH4fNQrwhgDeMaPv1MofO1GFcS87X_SrXaLw4JWBAd3O",
+            .url = "https://github.com/R4OSDev/r4os-libraries/archive/8e114508aaeb225dfd77070574290bc8595208e1.tar.gz",
+            .hash = "r4os_libraries-0.64.42-dH4fNcok2wGDV9E_ehLkawAWxkzPXEED23xX46dADis-",
         },
     },
     .paths = .{
