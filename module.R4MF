@@ -15,6 +15,7 @@ META=service.args=/RUN
 META=service.start=auto
 META=service.enabled=yes
 META=service.config=Injection\R4OS\CONFIG\SERVICES.R4S
+IMPORT=R4STD:Query2:2
 IMPORT=R4STD:SETTINGS_V1:1
 IMPORT=R4STD:DATE_V1:1
 IMPORT=R4STD:TIME_V1:1
