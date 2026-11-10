@@ -20,8 +20,8 @@ const TimeServiceState = struct {
     last_error: [r4os.abi.time_service_error_bytes]u8 = .{0} ** r4os.abi.time_service_error_bytes,
 };
 
-pub fn r4_app_main(r4_app: *r4os.App) i32 {
-    if (!r4std.init(r4_app.startContext())) return r4os.abi.err_no_group;
+pub fn r4_app_main(r4_app: *r4os.App2) i32 {
+    if (!r4std.init2(r4_app.raw)) return r4os.abi.err_no_group;
     var ctx = r4_app.system();
     if (hasArg(ctx.argsRaw(), selftest_arg)) return runSelfTest(&ctx);
     if (hasArg(ctx.argsRaw(), ping_arg)) return runPing(&ctx);
@@ -33,8 +33,11 @@ fn runService(ctx: *const r4os.r4sys.Context) i32 {
 
     var info: r4os.abi.ServiceInfo = .{};
     var handle: u32 = 0;
-    var waited: u32 = 0;
-    while (waited < 100 and handle == 0) : (waited += 1) {
+    const actual = ctx.base.generation2 orelse return r4os.abi.err_no_group;
+    const clock = r4os.inventory_reader.PlatformClock.fromContext2(actual) catch return r4os.abi.err_no_fn;
+    var registration_budget = r4os.rpc_budget.Budget.fromTicks(clock.read, 100) catch |err| return r4os.rpc_budget.code(err);
+    while (handle == 0 and !ctx.programShouldClose()) {
+        _ = registration_budget.remainingTicks() catch break;
         const rc = ctx.serviceEndpointRegister(service_name, 0, &info);
         if (rc == r4os.abi.service_api_result_ok and info.handle != 0) {
             handle = info.handle;

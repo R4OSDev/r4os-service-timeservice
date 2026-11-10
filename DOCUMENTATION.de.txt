@@ -16,14 +16,26 @@ Build aus dem Repository `Repositories/Services/TimeService`:
 Die Starter loesen Toolchain und lokale SDK-Abhaengigkeiten ueber
 `Settings.R4S` auf. Das Ergebnis liegt im Repository unter:
 
-    zig-out/TIMESVC.R4X
+    Artifacts/Modules/TimeService/TIMESVC.R4X (Workspace)
 
 Contract:
 - App-Einstieg: `r4_app_main`; `ENTRY_MODE=app` erzeugt den SDK-Startwrapper.
 - App-Klasse: `service`
-- Eingebaute Plattform-API: `R4SYS:Query:1`
+- Eingebaute Plattform-API: `R4SYS:Query2:2`
 - Runtime-R4L-Imports: `R4STD:SETTINGS_V1:1`,
   `R4STD:DATE_V1:1`, `R4STD:TIME_V1:1`, `R4STD:CONFIG_V1:1`
 - Service-Name: `TIMESVC`
 - Standardargumente: `/RUN`
 - Zielpfad im Image: `C:\R4OS\SERVICES\TIMESVC.R4X`
+
+Anschluss Generation2 (0.90.59)
+------------------------------
+Normale SDK196-Auswahl: SDK_PROFILE=r4os-zig-generation2, App2/R4XStart2 und
+Query2:2 fuer Plattformimporte. Unabhaengige R4STD-Interfaces behalten ihren
+eigenen Vertrag. Registrierung verwendet ein gemeinsames100Tick-Budget
+mit wirklicher Clock statt eines pro Versuch erneuerten Iterationsbudgets.
+
+TIMESVC bindet die weiterhin unabhaengigen R4STD-Zeit-/Datum-/Konfigurationsinterfaces ueber init2 an den tatsaechlichen Start2-Kontext. Kalender-/Zeitzonenpolicy und Dokumentformate bleiben unveraendert; der normale SDK pinnt Library56. ServiceLoop und Registrierung verwenden die gemeinsame technische Generation2.
+
+Build ueber ./Build.sh beziehungsweise Build.bat; beide verwenden dieselbe
+PowerShell7-Logik. Version, Klasse, Ziel und Imports stehen in module.R4MF.
